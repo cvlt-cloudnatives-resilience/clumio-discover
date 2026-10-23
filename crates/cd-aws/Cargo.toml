@@ -1,0 +1,33 @@
+[package]
+name = "cd-aws"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+aws-config.workspace = true
+aws-sdk-account.workspace = true
+aws-sdk-applicationautoscaling.workspace = true
+aws-sdk-backup.workspace = true
+aws-sdk-cloudtrail.workspace = true
+aws-sdk-cloudwatch.workspace = true
+aws-sdk-dynamodb.workspace = true
+aws-sdk-ec2.workspace = true
+aws-sdk-glue.workspace = true
+aws-sdk-iam.workspace = true
+aws-sdk-kms.workspace = true
+aws-sdk-organizations.workspace = true
+aws-sdk-rbin.workspace = true
+aws-sdk-rds.workspace = true
+aws-sdk-s3.workspace = true
+aws-sdk-s3control.workspace = true
+aws-sdk-s3tables.workspace = true
+aws-sdk-ssm.workspace = true
+aws-sdk-sts.workspace = true
+aws-smithy-types.workspace = true
+aws-types.workspace = true
+cd-model = { path = "../cd-model" }
+futures.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true

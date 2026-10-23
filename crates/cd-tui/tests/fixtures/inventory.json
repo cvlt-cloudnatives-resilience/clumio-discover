@@ -1,0 +1,348 @@
+{
+  "schema_version": 2,
+  "account": {
+    "id": "123456789012",
+    "partition": "aws",
+    "alias": "acme-prod",
+    "org_id": "o-abc123def4"
+  },
+  "regions": ["ap-southeast-2", "us-east-1"],
+  "generated_at": "2026-10-23T04:05:06Z",
+  "depth": "standard",
+  "filters": {
+    "aws_tag": { "key": "Owner", "value": "platform" }
+  },
+  "s3": [
+    {
+      "name": "acme-orders",
+      "arn": "arn:aws:s3:::acme-orders",
+      "region": "ap-southeast-2",
+      "created_at": "2024-02-01T00:00:00Z",
+      "versioning": "Enabled",
+      "tags": { "Owner": "platform", "Zone": "orders" },
+      "protection": {
+        "status": "aws_backup",
+        "aws_backup": {
+          "last_backup": "2026-10-22T14:00:00Z",
+          "recovery_points": 14,
+          "recovery_point_bytes": 5497558138880,
+          "vaults": ["Default"]
+        },
+        "native": [{ "kind": "s3_versioning", "detail": "Enabled" }]
+      }
+    },
+    {
+      "name": "acme-logs",
+      "arn": "arn:aws:s3:::acme-logs",
+      "region": "us-east-1",
+      "created_at": "2023-07-11T00:00:00Z",
+      "versioning": "Suspended",
+      "tags": { "Owner": "platform", "Zone": "logs" },
+      "protection": { "status": "unprotected" }
+    }
+  ],
+  "ebs": [
+    {
+      "id": "vol-0a1b2c3d4e5f60001",
+      "arn": "arn:aws:ec2:ap-southeast-2:123456789012:volume/vol-0a1b2c3d4e5f60001",
+      "region": "ap-southeast-2",
+      "state": "in-use",
+      "size_gib": 100,
+      "volume_type": "gp3",
+      "encrypted": true,
+      "attached_to": ["i-0aaa1111bbbb22223"],
+      "tags": { "Name": "app-root", "Owner": "platform" },
+      "protection": {
+        "status": "aws_backup",
+        "aws_backup": {
+          "last_backup": "2026-10-23T01:00:00Z",
+          "recovery_points": 7,
+          "vaults": ["Default", "dr-vault"]
+        },
+        "native": [{ "kind": "ebs_snapshot", "count": 3, "latest": "2026-10-20T00:00:00Z" }]
+      }
+    },
+    {
+      "id": "vol-0a1b2c3d4e5f60002",
+      "arn": "arn:aws:ec2:us-east-1:123456789012:volume/vol-0a1b2c3d4e5f60002",
+      "region": "us-east-1",
+      "state": "available",
+      "size_gib": 500,
+      "volume_type": "st1",
+      "encrypted": false,
+      "tags": { "Owner": "platform" },
+      "protection": {
+        "status": "native_only",
+        "native": [{ "kind": "ebs_snapshot", "count": 1, "latest": "2026-09-30T08:00:00Z" }],
+        "rbin_rules": ["rule-ebs-7d"]
+      }
+    }
+  ],
+  "ec2": [
+    {
+      "id": "i-0aaa1111bbbb22223",
+      "arn": "arn:aws:ec2:ap-southeast-2:123456789012:instance/i-0aaa1111bbbb22223",
+      "region": "ap-southeast-2",
+      "state": "running",
+      "instance_type": "m6i.large",
+      "volumes": ["vol-0a1b2c3d4e5f60001"],
+      "tags": { "Name": "app-server-1", "Owner": "platform" },
+      "protection": {
+        "status": "native_only",
+        "native": [{ "kind": "ami", "count": 2, "latest": "2026-10-15T00:00:00Z" }]
+      }
+    },
+    {
+      "id": "i-0ccc3333dddd44445",
+      "arn": "arn:aws:ec2:us-east-1:123456789012:instance/i-0ccc3333dddd44445",
+      "region": "us-east-1",
+      "state": "stopped",
+      "instance_type": "t3.micro",
+      "tags": { "Name": "bastion", "Owner": "platform" },
+      "protection": { "status": "unprotected" }
+    }
+  ],
+  "rds": [
+    {
+      "identifier": "orders-db",
+      "arn": "arn:aws:rds:ap-southeast-2:123456789012:db:orders-db",
+      "region": "ap-southeast-2",
+      "kind": "instance",
+      "engine": "postgres",
+      "engine_version": "16.4",
+      "status": "available",
+      "storage_encrypted": true,
+      "tags": { "Owner": "platform" },
+      "protection": {
+        "status": "native_only",
+        "native": [
+          { "kind": "rds_automated_backup", "detail": "retention 7 days", "latest": "2026-10-23T03:00:00Z" },
+          { "kind": "rds_snapshot", "count": 2, "latest": "2026-10-01T00:00:00Z" }
+        ]
+      }
+    }
+  ],
+  "documentdb": [
+    {
+      "identifier": "catalog-docdb",
+      "arn": "arn:aws:rds:ap-southeast-2:123456789012:cluster:catalog-docdb",
+      "region": "ap-southeast-2",
+      "kind": "cluster",
+      "engine": "docdb",
+      "engine_version": "5.0.0",
+      "status": "available",
+      "storage_encrypted": true,
+      "tags": { "Owner": "platform" },
+      "protection": {
+        "status": "aws_backup",
+        "aws_backup": { "last_backup": "2026-10-22T20:00:00Z", "recovery_points": 30, "vaults": ["Default"] }
+      }
+    }
+  ],
+  "neptune": [
+    {
+      "identifier": "graph-neptune",
+      "arn": "arn:aws:rds:us-east-1:123456789012:cluster:graph-neptune",
+      "region": "us-east-1",
+      "kind": "cluster",
+      "engine": "neptune",
+      "status": "available",
+      "storage_encrypted": false,
+      "tags": { "Owner": "platform" },
+      "protection": { "status": "unprotected" }
+    }
+  ],
+  "dynamodb": [
+    {
+      "name": "Customers",
+      "arn": "arn:aws:dynamodb:ap-southeast-2:123456789012:table/Customers",
+      "region": "ap-southeast-2",
+      "status": "ACTIVE",
+      "billing_mode": "PAY_PER_REQUEST",
+      "pitr": "ENABLED",
+      "item_count": 1250000,
+      "size_bytes": 2147483648,
+      "tags": { "Owner": "platform", "Zone": "customers" },
+      "protection": {
+        "status": "aws_backup",
+        "aws_backup": { "last_backup": "2026-10-23T02:00:00Z", "recovery_points": 35, "recovery_point_bytes": 2147483648, "vaults": ["Default"] },
+        "native": [{ "kind": "dynamodb_pitr", "detail": "ENABLED" }]
+      }
+    },
+    {
+      "name": "Sessions",
+      "arn": "arn:aws:dynamodb:us-east-1:123456789012:table/Sessions",
+      "region": "us-east-1",
+      "status": "ACTIVE",
+      "billing_mode": "PROVISIONED",
+      "pitr": "DISABLED",
+      "item_count": 4200,
+      "size_bytes": 1048576,
+      "tags": { "Owner": "platform" },
+      "protection": { "status": "unprotected" }
+    }
+  ],
+  "s3tables": [
+    {
+      "name": "analytics-tables",
+      "arn": "arn:aws:s3tables:ap-southeast-2:123456789012:bucket/analytics-tables",
+      "region": "ap-southeast-2",
+      "created_at": "2025-12-01T00:00:00Z",
+      "tables": [
+        { "namespace": "sales", "name": "daily", "arn": "arn:aws:s3tables:ap-southeast-2:123456789012:bucket/analytics-tables/table/daily" },
+        { "namespace": "sales", "name": "monthly", "arn": "arn:aws:s3tables:ap-southeast-2:123456789012:bucket/analytics-tables/table/monthly" }
+      ],
+      "tags": {},
+      "protection": { "status": "unprotected" }
+    }
+  ],
+  "glue": [
+    {
+      "name": "lakehouse",
+      "arn": "arn:aws:glue:us-east-1:123456789012:database/lakehouse",
+      "region": "us-east-1",
+      "iceberg_tables": [
+        { "name": "events", "arn": "arn:aws:glue:us-east-1:123456789012:table/lakehouse/events", "location": "s3://acme-lake/events/" }
+      ],
+      "tags": { "Owner": "data" },
+      "protection": { "status": "unprotected" }
+    }
+  ],
+  "aws_backup": [
+    {
+      "arn": "arn:aws:s3:::acme-orders",
+      "region": "ap-southeast-2",
+      "resource_type": "S3",
+      "resource_name": "acme-orders",
+      "coverage": { "last_backup": "2026-10-22T14:00:00Z", "recovery_points": 14, "recovery_point_bytes": 5497558138880, "vaults": ["Default"] }
+    },
+    {
+      "arn": "arn:aws:ec2:ap-southeast-2:123456789012:volume/vol-0a1b2c3d4e5f60001",
+      "region": "ap-southeast-2",
+      "resource_type": "EBS",
+      "coverage": { "last_backup": "2026-10-23T01:00:00Z", "recovery_points": 5, "vaults": ["Default"] }
+    },
+    {
+      "arn": "arn:aws:ec2:ap-southeast-2:123456789012:volume/vol-0a1b2c3d4e5f60001",
+      "region": "us-east-1",
+      "resource_type": "EBS",
+      "coverage": { "last_backup": "2026-10-22T01:00:00Z", "recovery_points": 2, "vaults": ["dr-vault"] }
+    },
+    {
+      "arn": "arn:aws:rds:ap-southeast-2:123456789012:cluster:catalog-docdb",
+      "region": "ap-southeast-2",
+      "resource_type": "DocumentDB",
+      "resource_name": "catalog-docdb",
+      "coverage": { "last_backup": "2026-10-22T20:00:00Z", "recovery_points": 30, "vaults": ["Default"] }
+    },
+    {
+      "arn": "arn:aws:dynamodb:ap-southeast-2:123456789012:table/Customers",
+      "region": "ap-southeast-2",
+      "resource_type": "DynamoDB",
+      "resource_name": "Customers",
+      "coverage": { "last_backup": "2026-10-23T02:00:00Z", "recovery_points": 35, "recovery_point_bytes": 2147483648, "vaults": ["Default"] }
+    }
+  ],
+  "backup_vaults": [
+    {
+      "name": "Default",
+      "arn": "arn:aws:backup:ap-southeast-2:123456789012:backup-vault:Default",
+      "region": "ap-southeast-2",
+      "recovery_points": 84,
+      "locked": false
+    },
+    {
+      "name": "dr-vault",
+      "arn": "arn:aws:backup:us-east-1:123456789012:backup-vault:dr-vault",
+      "region": "us-east-1",
+      "recovery_points": 2,
+      "locked": true
+    }
+  ],
+  "rbin_rules": [
+    {
+      "id": "rule-ebs-7d",
+      "arn": "arn:aws:rbin:us-east-1:123456789012:rule/rule-ebs-7d",
+      "region": "us-east-1",
+      "resource_type": "EBS_SNAPSHOT"
+    }
+  ],
+  "trails": [
+    {
+      "name": "org-trail",
+      "arn": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/org-trail",
+      "region": "ap-southeast-2",
+      "home_region": "ap-southeast-2",
+      "multi_region": false
+    }
+  ],
+  "findings": [
+    {
+      "severity": "high",
+      "code": "s3.unprotected",
+      "service": "s3",
+      "arn": "arn:aws:s3:::acme-logs",
+      "name": "acme-logs",
+      "region": "us-east-1",
+      "message": "no AWS Backup recovery point and no native backup"
+    },
+    {
+      "severity": "high",
+      "code": "ec2.unprotected",
+      "service": "ec2",
+      "arn": "arn:aws:ec2:us-east-1:123456789012:instance/i-0ccc3333dddd44445",
+      "name": "bastion",
+      "region": "us-east-1",
+      "message": "no AWS Backup recovery point and no native backup"
+    },
+    {
+      "severity": "medium",
+      "code": "ebs.unencrypted",
+      "service": "ebs",
+      "arn": "arn:aws:ec2:us-east-1:123456789012:volume/vol-0a1b2c3d4e5f60002",
+      "name": "vol-0a1b2c3d4e5f60002",
+      "region": "us-east-1",
+      "message": "volume is not encrypted"
+    },
+    {
+      "severity": "medium",
+      "code": "dynamodb.pitr_off",
+      "service": "dynamodb",
+      "arn": "arn:aws:dynamodb:us-east-1:123456789012:table/Sessions",
+      "name": "Sessions",
+      "region": "us-east-1",
+      "message": "point-in-time recovery is off"
+    },
+    {
+      "severity": "low",
+      "code": "s3.versioning_suspended",
+      "service": "s3",
+      "arn": "arn:aws:s3:::acme-logs",
+      "name": "acme-logs",
+      "region": "us-east-1",
+      "message": "versioning is suspended"
+    },
+    {
+      "severity": "info",
+      "code": "cloudtrail.region_not_logged",
+      "service": "cloudtrail",
+      "arn": "",
+      "name": "us-east-1",
+      "region": "us-east-1",
+      "message": "no trail logs this region"
+    }
+  ],
+  "errors": [
+    {
+      "service": "glue",
+      "operation": "GetTableOptimizer",
+      "region": "us-east-1",
+      "message": "AccessDeniedException: not authorized"
+    },
+    {
+      "service": "account",
+      "operation": "ListRegions",
+      "message": "throttled, used the requested region list"
+    }
+  ]
+}

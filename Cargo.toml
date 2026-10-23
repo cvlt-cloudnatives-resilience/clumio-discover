@@ -1,0 +1,52 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/clumio-discover",
+    "crates/cd-model",
+    "crates/cd-aws",
+    "crates/cd-tui",
+]
+
+[workspace.package]
+version = "0.2.0"
+edition = "2021"
+license = "Apache-2.0"
+
+[workspace.dependencies]
+anyhow = "1.0"
+aws-config = "1.13.0"
+aws-sdk-account = { version = "1.124.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-applicationautoscaling = { version = "1.125.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-backup = { version = "1.130.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-cloudtrail = { version = "1.128.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-cloudwatch = { version = "1.138.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-dynamodb = { version = "1.134.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-ec2 = { version = "1.271.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-glue = { version = "1.180.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-iam = { version = "1.131.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-kms = { version = "1.126.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-organizations = { version = "1.135.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-rbin = { version = "1.120.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-rds = { version = "1.157.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-s3 = { version = "1.155.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-s3control = { version = "1.136.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-s3tables = { version = "1.74.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-ssm = { version = "1.131.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-sts = { version = "1.122.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-smithy-types = "1.9.0"
+aws-types = "1.7.0"
+clap = { version = "4.6", features = ["derive", "env"] }
+futures = "0.3.34"
+ratatui = "0.30.2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "sync"] }
+toml = "0.8"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

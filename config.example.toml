@@ -1,0 +1,28 @@
+# Clumio Discover options. Every line is optional.
+# Copy to ~/.config/clumio-discover/config.toml, or pass with --config.
+
+# Scan only these regions (default: every enabled region Clumio supports).
+# regions = ["us-east-1", "eu-west-1"]
+
+# AWS profile to use (default: your normal AWS credentials).
+# profile = "default"
+
+# "deep" also checks every snapshot and AMI for public sharing (same as --deep).
+# depth = "standard"
+
+# Turn off services you don't want scanned.
+[services]
+# s3 = false
+# ebs = false
+# ec2 = false
+# rds = false
+# documentdb = false
+# neptune = false
+# dynamodb = false
+# s3tables = false
+# glue = false
+# aws_backup = false
+
+# Only report resources that carry this tag.
+[filters]
+# aws_tag = { key = "Environment", value = "prod" }

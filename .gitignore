@@ -1,0 +1,4 @@
+/target
+/dist
+inventory*.json
+!crates/cd-tui/tests/fixtures/inventory.json
