@@ -167,45 +167,32 @@ clumio-discover --profile my-profile
 | `↑` `↓` | Move through a list |
 | `Enter` / `Esc` | Open / close the details of a resource |
 | `/` | Search |
-| `f` | Filter, for example only unprotected resources |
+| `f` | Filter, for example only resources that are not protected |
 | `e` | Export the current list to CSV and JSON |
 | `q` | Quit |
 
-Each resource is **Protected** (it has at least one backup) or **Unprotected**
-(it has none). **Backed up by** shows where its backups come from, and **Last
-backup** shows the newest one. See
-[How protection is decided](#how-protection-is-decided).
+Each resource is either **AWS Backup** (protected by AWS Backup) or **Not
+protected**, and **Last backup** shows its newest AWS Backup recovery point.
+See [How protection is decided](#how-protection-is-decided).
 
 ![Clumio Discover resource list](docs/resources.png)
 
-**Findings** lists risks worth fixing, most serious first, such as unencrypted
-volumes, tables without point-in-time recovery, or publicly shared snapshots.
+**Findings** lists risks worth fixing, most serious first, such as resources
+with no backup of any kind, unencrypted volumes, or publicly shared snapshots.
 
 ## How protection is decided
 
-A resource is **Protected** if it has at least one of these backups, and
-**Unprotected** if it has none:
+A resource is **AWS Backup** when AWS Backup holds at least one recovery point
+for it, in any region. Everything else is **Not protected**.
 
-| Resource | Backed up by |
-|---|---|
-| Any resource | **AWS Backup**: a recovery point in an AWS Backup vault, in any region |
-| EBS volume | **Snapshots** of the volume |
-| EC2 instance | **AMIs** of the instance, or **Snapshots** of its volumes |
-| RDS, Aurora, DocumentDB, Neptune | **Automated backups** switched on, or manual **Snapshots** |
-| DynamoDB table | **PITR** (point-in-time recovery) switched on, or **On-demand backups** |
-| S3 bucket | **AWS Backup** only; see below |
+Backups made outside AWS Backup don't count: EBS snapshots, AMIs, RDS
+automated backups and snapshots, and DynamoDB point-in-time recovery and
+on-demand backups. They have no central schedule or retention and sit in the
+same account as the resource. They're still listed in each resource's details
+(press `Enter`).
 
-Good to know:
-
-- **S3 versioning, replication and object lock are not backups.** A delete or
-  corruption is versioned or replicated along with everything else, in the same
-  account. They're shown in the bucket's details, but a bucket with only these
-  is Unprotected.
-- **AWS Backup stores some backups as snapshots.** Its EBS, EC2 and some
-  DynamoDB backups are ordinary snapshots, AMIs or on-demand backups, so they
-  are listed under those too, for example "AWS Backup, Snapshots". Volumes of
-  an EC2 instance that AWS Backup protects show only "Snapshots", because AWS
-  Backup records the instance rather than each volume.
+S3 versioning, replication and object lock don't count either. A delete or
+corruption is versioned or replicated along with everything else.
 
 ## Deep scan
 

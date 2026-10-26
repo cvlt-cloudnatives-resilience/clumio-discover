@@ -527,13 +527,13 @@ fn summary_row(s: &ServiceSummary, label: String, bar_w: usize, bold: bool) -> R
             Cell::from(dim("not scanned")),
         ]);
     }
-    let [protected, none] = s.by_status;
+    let [aws, none] = s.by_status;
     Row::new(vec![
         Cell::from(label).style(name_style),
         Cell::from(format!("{:>6}", s.count)),
         Cell::from(format!("{:>10}", format::opt_bytes(s.bytes))),
         Cell::from(stacked_bar(s.by_status, bar_w)),
-        count_cell(protected, s.count, theme::OK),
+        count_cell(aws, s.count, theme::OK),
         count_cell(none, s.count, theme::PINK),
     ])
     .style(if bold {
@@ -559,12 +559,12 @@ fn draw_services(frame: &mut Frame, area: Rect, b: &Browser) {
     .title_bottom(Line::from(dim(context)).right_aligned());
     let inner = block.inner(area);
 
-    let fixed = [14u16, 6, 10, 11, 11];
+    let fixed = [14u16, 6, 10, 10, 13];
     let spacing = fixed.len() as u16;
     let bar_w = inner
         .width
         .saturating_sub(fixed.iter().sum::<u16>() + spacing + 1)
-        .min(48);
+        .max(1);
     let widths = [
         Constraint::Length(fixed[0]),
         Constraint::Length(fixed[1]),
@@ -578,8 +578,8 @@ fn draw_services(frame: &mut Frame, area: Rect, b: &Browser) {
         Cell::from("Assets"),
         Cell::from(format!("{:>10}", "Size")),
         Cell::from("Protection"),
-        Cell::from(Span::styled("Protected", Style::new().fg(theme::OK))),
-        Cell::from(Span::styled("Unprotected", Style::new().fg(theme::PINK))),
+        Cell::from(Span::styled("AWS Backup", Style::new().fg(theme::OK))),
+        Cell::from(Span::styled("Not protected", Style::new().fg(theme::PINK))),
     ])
     .style(theme::header());
 
@@ -616,7 +616,7 @@ fn draw_regions(frame: &mut Frame, area: Rect, b: &Browser) {
     let bar_w = inner
         .width
         .saturating_sub(fixed.iter().sum::<u16>() + 3)
-        .min(48);
+        .max(1);
     let rows = b.overview.regions.iter().map(|r| {
         Row::new(vec![
             Cell::from(r.region.clone()),

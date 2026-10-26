@@ -297,9 +297,7 @@ impl Inventory {
                 }
                 asset.protection_mut().settle();
                 findings.extend(asset.findings());
-                if asset.protection().status == ProtectionStatus::Unprotected
-                    && asset.protection_scanned()
-                {
+                if !asset.protection().has_backup() && asset.protection_scanned() {
                     findings.push(asset.finding(
                         Severity::High,
                         &format!("{}.unprotected", A::SERVICE.as_str()),
@@ -533,8 +531,7 @@ mod tests {
 
         let ebs = inventory.ebs.as_ref().unwrap();
         assert!(ebs.iter().all(|v| v.snapshots.is_some()));
-        assert_eq!(ebs[0].protection.status, ProtectionStatus::Protected);
-        assert!(ebs[0].protection.aws_backup.is_some());
+        assert_eq!(ebs[0].protection.status, ProtectionStatus::AwsBackup);
         assert_eq!(ebs[1].protection.status, ProtectionStatus::Unprotected);
         let codes: Vec<_> = inventory
             .findings

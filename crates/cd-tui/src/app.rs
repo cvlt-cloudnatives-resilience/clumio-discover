@@ -70,7 +70,7 @@ pub struct RegionSummary {
 
 pub fn status_index(status: ProtectionStatus) -> usize {
     match status {
-        ProtectionStatus::Protected => 0,
+        ProtectionStatus::AwsBackup => 0,
         ProtectionStatus::Unprotected => 1,
     }
 }
@@ -408,8 +408,8 @@ impl Browser {
                         "scanned",
                         "assets",
                         "size_bytes",
-                        "protected",
-                        "unprotected",
+                        "aws_backup",
+                        "not_protected",
                     ],
                     &rows,
                     json,
@@ -447,14 +447,14 @@ impl Browser {
             .services
             .iter()
             .map(|s| {
-                let [protected, none] = s.by_status;
+                let [aws, none] = s.by_status;
                 (
                     vec![
                         s.service.as_str().to_string(),
                         s.scanned.to_string(),
                         s.count.to_string(),
                         s.bytes.map(|b| b.to_string()).unwrap_or_default(),
-                        protected.to_string(),
+                        aws.to_string(),
                         none.to_string(),
                     ],
                     json!({
@@ -462,8 +462,8 @@ impl Browser {
                         "scanned": s.scanned,
                         "assets": s.count,
                         "size_bytes": s.bytes,
-                        "protected": protected,
-                        "unprotected": none,
+                        "aws_backup": aws,
+                        "not_protected": none,
                     }),
                 )
             })

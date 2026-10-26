@@ -110,7 +110,7 @@ fn overview_shows_counts_statuses_and_header() {
     assert!(s.contains("Protection by service"));
 
     let total = line_with(&s, "Total");
-    for expected in ["13", "7  54%", "6  46%"] {
+    for expected in ["13", "4  31%", "9  69%"] {
         assert!(
             total.contains(expected),
             "{expected:?} missing from {total:?}"
@@ -127,8 +127,8 @@ fn overview_shows_counts_statuses_and_header() {
     assert!(s.contains("Medium 2"));
     assert!(s.contains("Backup vaults 2 · Recycle Bin rules 1 · Trails 1 · Errors 2"));
 
-    assert_eq!(fg_of(&buf, "Unprotected", "Protected"), theme::OK);
-    assert_eq!(fg_of(&buf, "Unprotected", "Unprotected"), theme::PINK);
+    assert_eq!(fg_of(&buf, "Not protected", "AWS Backup"), theme::OK);
+    assert_eq!(fg_of(&buf, "Not protected", "Not protected"), theme::PINK);
     assert_eq!(fg_of(&buf, "High 2", "High 2"), theme::PINK);
     assert!(buf
         .content
@@ -151,10 +151,8 @@ fn asset_tabs_list_fixture_names_with_coloured_status() {
         "{s}"
     );
     assert!(s.contains("2 of 2"));
-    assert_eq!(fg_of(&buf, "acme-logs", "Unprotected"), theme::ON_ACCENT);
-    assert_eq!(fg_of(&buf, "acme-orders", "Protected"), theme::OK);
-    assert!(s.contains("Backed up by"));
-    assert!(line_with(&s, "acme-orders").contains("AWS Backup"));
+    assert_eq!(fg_of(&buf, "acme-logs", "Not protected"), theme::ON_ACCENT);
+    assert_eq!(fg_of(&buf, "acme-orders", "AWS Backup"), theme::OK);
 
     press(&mut app, KeyCode::Char('3'));
     let s = screen(&mut app);
@@ -204,7 +202,7 @@ fn search_filter_and_sort_narrow_the_rows() {
 
     press(&mut app, KeyCode::Char('f'));
     let s = screen(&mut app);
-    assert!(s.contains("filter: Protected"));
+    assert!(s.contains("filter: AWS Backup"));
     assert!(s.contains("acme-orders") && !s.contains("acme-logs"));
     press(&mut app, KeyCode::Char('f'));
     press(&mut app, KeyCode::Char('f'));
@@ -231,7 +229,7 @@ fn detail_pane_shows_raw_json_with_protection() {
     assert!(s.contains("acme-orders detail"));
     assert!(s.contains("\"versioning\": \"Enabled\""));
     assert!(s.contains("│▌  \"protection\": {"), "{s}");
-    assert_eq!(fg_of(&buf, "\"status\"", "\"protected\""), theme::OK);
+    assert_eq!(fg_of(&buf, "\"status\"", "\"aws_backup\""), theme::OK);
     press(&mut app, KeyCode::Char('G'));
     press(&mut app, KeyCode::Char('k'));
     draw(&mut app, 120, 10);
@@ -349,7 +347,7 @@ fn export_writes_filtered_csv_and_json() {
     let mut lines = csv.lines();
     assert_eq!(
         lines.next(),
-        Some("name,arn,region,size_bytes,protection,backed_up_by,last_backup,summary,tags")
+        Some("name,arn,region,size_bytes,protection,last_backup,summary,tags")
     );
     assert!(lines
         .next()

@@ -63,7 +63,7 @@ fn colour(text: &str) -> Vec<Span<'static>> {
     let body = value.trim_end_matches(',');
     let comma = &value[body.len()..];
     let style = match body {
-        "\"protected\"" => Style::new().fg(theme::OK),
+        "\"aws_backup\"" => Style::new().fg(theme::OK),
         "\"unprotected\"" => Style::new().fg(theme::PINK),
         _ if body.starts_with('"') => Style::new().fg(theme::TEXT),
         "true" | "false" | "null" => Style::new().fg(theme::INDIGO),
