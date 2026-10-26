@@ -47,7 +47,7 @@ Download with the [GitHub CLI](https://cli.github.com), signed in with
 
 ```
 TARGET=aarch64-apple-darwin
-gh release download --repo cvlt-cloudnatives-resilience/clumio-discover \
+gh release download --repo cvlt-cloudnatives-resilience/clumio-discover-releases \
   --pattern "*-$TARGET.tar.gz" --pattern SHA256SUMS
 ```
 
@@ -56,7 +56,7 @@ or with curl:
 ```
 TARGET=aarch64-apple-darwin
 VERSION=v0.2.0
-BASE=https://github.com/cvlt-cloudnatives-resilience/clumio-discover/releases/download/$VERSION
+BASE=https://github.com/cvlt-cloudnatives-resilience/clumio-discover-releases/releases/download/$VERSION
 curl -fLO "$BASE/clumio-discover-$VERSION-$TARGET.tar.gz"
 curl -fLO "$BASE/SHA256SUMS"
 ```
@@ -89,7 +89,7 @@ xattr -d com.apple.quarantine clumio-discover
 In PowerShell, download with the GitHub CLI:
 
 ```
-gh release download --repo cvlt-cloudnatives-resilience/clumio-discover --pattern "*-x86_64-pc-windows-msvc.zip"
+gh release download --repo cvlt-cloudnatives-resilience/clumio-discover-releases --pattern "*-x86_64-pc-windows-msvc.zip"
 ```
 
 or with `Invoke-WebRequest`:
@@ -97,7 +97,7 @@ or with `Invoke-WebRequest`:
 ```
 $Version = "v0.2.0"
 $Name = "clumio-discover-$Version-x86_64-pc-windows-msvc"
-Invoke-WebRequest "https://github.com/cvlt-cloudnatives-resilience/clumio-discover/releases/download/$Version/$Name.zip" -OutFile "$Name.zip"
+Invoke-WebRequest "https://github.com/cvlt-cloudnatives-resilience/clumio-discover-releases/releases/download/$Version/$Name.zip" -OutFile "$Name.zip"
 ```
 
 Then unpack and run it:
@@ -124,7 +124,7 @@ set up.
    ```
    TARGET=$(uname -m)-unknown-linux-musl
    VERSION=v0.2.0
-   curl -fLO "https://github.com/cvlt-cloudnatives-resilience/clumio-discover/releases/download/$VERSION/clumio-discover-$VERSION-$TARGET.tar.gz"
+   curl -fLO "https://github.com/cvlt-cloudnatives-resilience/clumio-discover-releases/releases/download/$VERSION/clumio-discover-$VERSION-$TARGET.tar.gz"
    ```
 
    or by downloading the `x86_64-unknown-linux-musl` build on your computer and

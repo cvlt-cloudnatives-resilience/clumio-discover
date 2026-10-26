@@ -93,7 +93,11 @@ jobs:
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-22.04
+    env:
+      RELEASES_REPO: cvlt-cloudnatives-resilience/clumio-discover-releases
+      RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: assets
@@ -104,3 +108,34 @@ jobs:
         with:
           files: assets/*
           generate_release_notes: true
+      - uses: actions/checkout@v4
+        if: env.RELEASES_TOKEN != ''
+        with:
+          repository: ${{ env.RELEASES_REPO }}
+          token: ${{ env.RELEASES_TOKEN }}
+          path: releases-repo
+      - name: Update the releases repo
+        if: env.RELEASES_TOKEN != ''
+        run: |
+          mkdir -p releases-repo/policy releases-repo/docs
+          cp README.md LICENSE config.example.toml releases-repo/
+          cp policy/clumio-discover-readonly.json releases-repo/policy/
+          cp docs/*.png releases-repo/docs/
+          cd releases-repo
+          git add -A
+          if ! git diff --cached --quiet; then
+            git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "Update for ${GITHUB_REF_NAME}"
+            git push
+          fi
+      - uses: softprops/action-gh-release@v2
+        if: env.RELEASES_TOKEN != ''
+        with:
+          repository: ${{ env.RELEASES_REPO }}
+          token: ${{ env.RELEASES_TOKEN }}
+          target_commitish: main
+          files: assets/*
+          body: |
+            Download the package for your computer and check it against `SHA256SUMS`.
+            Install steps are in the [README](https://github.com/${{ env.RELEASES_REPO }}#install).
