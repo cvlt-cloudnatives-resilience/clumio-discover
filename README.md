@@ -171,17 +171,48 @@ clumio-discover --profile my-profile
 | `e` | Export the current list to CSV and JSON |
 | `q` | Quit |
 
-Each resource is marked:
-
-- **AWS Backup**: backed up by AWS Backup.
-- **Native only**: no AWS Backup, but it has snapshots, AMIs, automated backups
-  or point-in-time recovery.
-- **Unprotected**: no backup of any kind.
+Each resource is marked **AWS Backup**, **Native only** or **Unprotected**.
+See [How protection is decided](#how-protection-is-decided).
 
 ![Clumio Discover resource list](docs/resources.png)
 
 **Findings** lists risks worth fixing, most serious first, such as unencrypted
 volumes, tables without point-in-time recovery, or publicly shared snapshots.
+
+## How protection is decided
+
+**AWS Backup.** AWS Backup keeps a list of every resource it has backed up. If
+a resource is on that list, it's marked AWS Backup. Backups copied to another
+region's vault count too.
+
+**Native only.** The resource isn't in AWS Backup, but its own service has a
+backup of it:
+
+| Resource | Counts as a native backup |
+|---|---|
+| EBS volume | any snapshot of the volume |
+| EC2 instance | an AMI of the instance, or snapshots of its volumes |
+| RDS, Aurora, DocumentDB, Neptune | automated backups switched on, or any manual snapshot |
+| DynamoDB table | point-in-time recovery switched on, or any on-demand backup |
+| S3 bucket | nothing; see below |
+
+**Unprotected.** Neither of the above.
+
+A resource with both is marked AWS Backup. **Last backup** shows the newest
+backup from either.
+
+Good to know:
+
+- **S3 versioning, replication and object lock are not backups.** A delete or
+  corruption is versioned or replicated along with everything else, in the same
+  account. They're shown in the bucket's details, but a bucket with only these
+  is marked Unprotected.
+- **Volumes of an EC2 instance that AWS Backup protects show Native only.** AWS
+  Backup records the instance, not its volumes, and the volume snapshots it
+  takes look like ordinary snapshots. The volumes are backed up; the instance
+  shows AWS Backup in the EC2 section.
+- **Backups made by AWS Backup also appear in native counts**, for example in a
+  DynamoDB table's backup count. The status is still AWS Backup.
 
 ## Deep scan
 
