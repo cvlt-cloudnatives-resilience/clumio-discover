@@ -66,8 +66,7 @@ pub fn key() -> Style {
 
 pub fn status(status: ProtectionStatus) -> Color {
     match status {
-        ProtectionStatus::AwsBackup => OK,
-        ProtectionStatus::NativeOnly => WARN,
+        ProtectionStatus::Protected => OK,
         ProtectionStatus::Unprotected => PINK,
     }
 }

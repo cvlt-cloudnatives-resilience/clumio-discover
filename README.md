@@ -55,7 +55,7 @@ or with curl:
 
 ```
 TARGET=aarch64-apple-darwin
-VERSION=v0.2.0
+VERSION=v0.3.0
 BASE=https://github.com/cvlt-cloudnatives-resilience/clumio-discover-releases/releases/download/$VERSION
 curl -fLO "$BASE/clumio-discover-$VERSION-$TARGET.tar.gz"
 curl -fLO "$BASE/SHA256SUMS"
@@ -95,7 +95,7 @@ gh release download --repo cvlt-cloudnatives-resilience/clumio-discover-releases
 or with `Invoke-WebRequest`:
 
 ```
-$Version = "v0.2.0"
+$Version = "v0.3.0"
 $Name = "clumio-discover-$Version-x86_64-pc-windows-msvc"
 Invoke-WebRequest "https://github.com/cvlt-cloudnatives-resilience/clumio-discover-releases/releases/download/$Version/$Name.zip" -OutFile "$Name.zip"
 ```
@@ -123,7 +123,7 @@ set up.
 
    ```
    TARGET=$(uname -m)-unknown-linux-musl
-   VERSION=v0.2.0
+   VERSION=v0.3.0
    curl -fLO "https://github.com/cvlt-cloudnatives-resilience/clumio-discover-releases/releases/download/$VERSION/clumio-discover-$VERSION-$TARGET.tar.gz"
    ```
 
@@ -171,8 +171,10 @@ clumio-discover --profile my-profile
 | `e` | Export the current list to CSV and JSON |
 | `q` | Quit |
 
-Each resource is marked **AWS Backup**, **Native only** or **Unprotected**.
-See [How protection is decided](#how-protection-is-decided).
+Each resource is **Protected** (it has at least one backup) or **Unprotected**
+(it has none). **Backed up by** shows where its backups come from, and **Last
+backup** shows the newest one. See
+[How protection is decided](#how-protection-is-decided).
 
 ![Clumio Discover resource list](docs/resources.png)
 
@@ -181,38 +183,29 @@ volumes, tables without point-in-time recovery, or publicly shared snapshots.
 
 ## How protection is decided
 
-**AWS Backup.** AWS Backup keeps a list of every resource it has backed up. If
-a resource is on that list, it's marked AWS Backup. Backups copied to another
-region's vault count too.
+A resource is **Protected** if it has at least one of these backups, and
+**Unprotected** if it has none:
 
-**Native only.** The resource isn't in AWS Backup, but its own service has a
-backup of it:
-
-| Resource | Counts as a native backup |
+| Resource | Backed up by |
 |---|---|
-| EBS volume | any snapshot of the volume |
-| EC2 instance | an AMI of the instance, or snapshots of its volumes |
-| RDS, Aurora, DocumentDB, Neptune | automated backups switched on, or any manual snapshot |
-| DynamoDB table | point-in-time recovery switched on, or any on-demand backup |
-| S3 bucket | nothing; see below |
-
-**Unprotected.** Neither of the above.
-
-A resource with both is marked AWS Backup. **Last backup** shows the newest
-backup from either.
+| Any resource | **AWS Backup**: a recovery point in an AWS Backup vault, in any region |
+| EBS volume | **Snapshots** of the volume |
+| EC2 instance | **AMIs** of the instance, or **Snapshots** of its volumes |
+| RDS, Aurora, DocumentDB, Neptune | **Automated backups** switched on, or manual **Snapshots** |
+| DynamoDB table | **PITR** (point-in-time recovery) switched on, or **On-demand backups** |
+| S3 bucket | **AWS Backup** only; see below |
 
 Good to know:
 
 - **S3 versioning, replication and object lock are not backups.** A delete or
   corruption is versioned or replicated along with everything else, in the same
   account. They're shown in the bucket's details, but a bucket with only these
-  is marked Unprotected.
-- **Volumes of an EC2 instance that AWS Backup protects show Native only.** AWS
-  Backup records the instance, not its volumes, and the volume snapshots it
-  takes look like ordinary snapshots. The volumes are backed up; the instance
-  shows AWS Backup in the EC2 section.
-- **Backups made by AWS Backup also appear in native counts**, for example in a
-  DynamoDB table's backup count. The status is still AWS Backup.
+  is Unprotected.
+- **AWS Backup stores some backups as snapshots.** Its EBS, EC2 and some
+  DynamoDB backups are ordinary snapshots, AMIs or on-demand backups, so they
+  are listed under those too, for example "AWS Backup, Snapshots". Volumes of
+  an EC2 instance that AWS Backup protects show only "Snapshots", because AWS
+  Backup records the instance rather than each volume.
 
 ## Deep scan
 

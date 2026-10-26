@@ -58,21 +58,20 @@ pub struct ServiceSummary {
     pub scanned: bool,
     pub count: usize,
     pub bytes: Option<u64>,
-    pub by_status: [usize; 3],
+    pub by_status: [usize; 2],
 }
 
 pub struct RegionSummary {
     pub region: String,
     pub count: usize,
     pub bytes: Option<u64>,
-    pub by_status: [usize; 3],
+    pub by_status: [usize; 2],
 }
 
 pub fn status_index(status: ProtectionStatus) -> usize {
     match status {
-        ProtectionStatus::AwsBackup => 0,
-        ProtectionStatus::NativeOnly => 1,
-        ProtectionStatus::Unprotected => 2,
+        ProtectionStatus::Protected => 0,
+        ProtectionStatus::Unprotected => 1,
     }
 }
 
@@ -99,7 +98,7 @@ impl Overview {
                 scanned: rows.is_some(),
                 count: 0,
                 bytes: None,
-                by_status: [0; 3],
+                by_status: [0; 2],
             };
             for row in rows.iter().flatten() {
                 summary.count += 1;
@@ -111,7 +110,7 @@ impl Overview {
                         region: row.region.clone(),
                         count: 0,
                         bytes: None,
-                        by_status: [0; 3],
+                        by_status: [0; 2],
                     });
                 region.count += 1;
                 add_bytes(&mut region.bytes, row.size_bytes);
@@ -132,13 +131,13 @@ impl Overview {
             scanned: true,
             count: 0,
             bytes: None,
-            by_status: [0; 3],
+            by_status: [0; 2],
         };
         for s in &self.services {
             total.count += s.count;
             add_bytes(&mut total.bytes, s.bytes);
-            for i in 0..3 {
-                total.by_status[i] += s.by_status[i];
+            for (sum, n) in total.by_status.iter_mut().zip(s.by_status) {
+                *sum += n;
             }
         }
         total
@@ -409,8 +408,7 @@ impl Browser {
                         "scanned",
                         "assets",
                         "size_bytes",
-                        "aws_backup",
-                        "native_only",
+                        "protected",
                         "unprotected",
                     ],
                     &rows,
@@ -449,15 +447,14 @@ impl Browser {
             .services
             .iter()
             .map(|s| {
-                let [aws, native, none] = s.by_status;
+                let [protected, none] = s.by_status;
                 (
                     vec![
                         s.service.as_str().to_string(),
                         s.scanned.to_string(),
                         s.count.to_string(),
                         s.bytes.map(|b| b.to_string()).unwrap_or_default(),
-                        aws.to_string(),
-                        native.to_string(),
+                        protected.to_string(),
                         none.to_string(),
                     ],
                     json!({
@@ -465,8 +462,7 @@ impl Browser {
                         "scanned": s.scanned,
                         "assets": s.count,
                         "size_bytes": s.bytes,
-                        "aws_backup": aws,
-                        "native_only": native,
+                        "protected": protected,
                         "unprotected": none,
                     }),
                 )

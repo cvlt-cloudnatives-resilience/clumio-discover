@@ -64,7 +64,7 @@ fn centered(area: Rect, width: u16, height: u16) -> Rect {
     )
 }
 
-fn stacked_bar(parts: [usize; 3], width: usize) -> Line<'static> {
+fn stacked_bar(parts: [usize; 2], width: usize) -> Line<'static> {
     let total: usize = parts.iter().sum();
     if width == 0 {
         return Line::default();
@@ -80,7 +80,7 @@ fn stacked_bar(parts: [usize; 3], width: usize) -> Line<'static> {
         .map(|&p| p as f64 * width as f64 / total as f64)
         .collect();
     let mut cells: Vec<usize> = exact.iter().map(|e| e.floor() as usize).collect();
-    let mut order: Vec<usize> = (0..3).collect();
+    let mut order: Vec<usize> = (0..parts.len()).collect();
     order.sort_by(|&a, &b| {
         (exact[b] - exact[b].floor())
             .partial_cmp(&(exact[a] - exact[a].floor()))
@@ -90,17 +90,20 @@ fn stacked_bar(parts: [usize; 3], width: usize) -> Line<'static> {
     for &i in order.iter().take(left) {
         cells[i] += 1;
     }
-    for i in 0..3 {
+    for i in 0..parts.len() {
         if parts[i] > 0 && cells[i] == 0 {
-            if let Some(big) = (0..3).filter(|&j| cells[j] > 1).max_by_key(|&j| cells[j]) {
+            if let Some(big) = (0..parts.len())
+                .filter(|&j| cells[j] > 1)
+                .max_by_key(|&j| cells[j])
+            {
                 cells[big] -= 1;
                 cells[i] = 1;
             }
         }
     }
-    let colors = [theme::OK, theme::WARN, theme::PINK];
+    let colors = [theme::OK, theme::PINK];
     Line::from(
-        (0..3)
+        (0..parts.len())
             .filter(|&i| cells[i] > 0)
             .map(|i| Span::styled("█".repeat(cells[i]), Style::new().fg(colors[i])))
             .collect::<Vec<_>>(),
@@ -524,14 +527,13 @@ fn summary_row(s: &ServiceSummary, label: String, bar_w: usize, bold: bool) -> R
             Cell::from(dim("not scanned")),
         ]);
     }
-    let [aws, native, none] = s.by_status;
+    let [protected, none] = s.by_status;
     Row::new(vec![
         Cell::from(label).style(name_style),
         Cell::from(format!("{:>6}", s.count)),
         Cell::from(format!("{:>10}", format::opt_bytes(s.bytes))),
         Cell::from(stacked_bar(s.by_status, bar_w)),
-        count_cell(aws, s.count, theme::OK),
-        count_cell(native, s.count, theme::WARN),
+        count_cell(protected, s.count, theme::OK),
         count_cell(none, s.count, theme::PINK),
     ])
     .style(if bold {
@@ -557,7 +559,7 @@ fn draw_services(frame: &mut Frame, area: Rect, b: &Browser) {
     .title_bottom(Line::from(dim(context)).right_aligned());
     let inner = block.inner(area);
 
-    let fixed = [14u16, 6, 10, 11, 11, 11];
+    let fixed = [14u16, 6, 10, 11, 11];
     let spacing = fixed.len() as u16;
     let bar_w = inner
         .width
@@ -570,15 +572,13 @@ fn draw_services(frame: &mut Frame, area: Rect, b: &Browser) {
         Constraint::Length(bar_w),
         Constraint::Length(fixed[3]),
         Constraint::Length(fixed[4]),
-        Constraint::Length(fixed[5]),
     ];
     let header = Row::new(vec![
         Cell::from("Service"),
         Cell::from("Assets"),
         Cell::from(format!("{:>10}", "Size")),
         Cell::from("Protection"),
-        Cell::from(Span::styled("AWS Backup", Style::new().fg(theme::OK))),
-        Cell::from(Span::styled("Native only", Style::new().fg(theme::WARN))),
+        Cell::from(Span::styled("Protected", Style::new().fg(theme::OK))),
         Cell::from(Span::styled("Unprotected", Style::new().fg(theme::PINK))),
     ])
     .style(theme::header());
@@ -956,22 +956,22 @@ mod tests {
     #[test]
     fn stacked_bar_fills_width_and_keeps_small_shares() {
         assert_eq!(
-            widths(&stacked_bar([1, 1, 2], 8)),
-            vec![(2, theme::OK), (2, theme::WARN), (4, theme::PINK)]
+            widths(&stacked_bar([1, 3], 8)),
+            vec![(2, theme::OK), (6, theme::PINK)]
         );
         assert_eq!(
-            widths(&stacked_bar([100, 0, 1], 10)),
+            widths(&stacked_bar([100, 1], 10)),
             vec![(9, theme::OK), (1, theme::PINK)]
         );
         assert_eq!(
-            widths(&stacked_bar([1, 1, 1], 10))
+            widths(&stacked_bar([1, 2], 10))
                 .iter()
                 .map(|w| w.0)
                 .sum::<usize>(),
             10
         );
-        assert_eq!(stacked_bar([0, 0, 0], 5).spans[0].content, "─────");
-        assert!(stacked_bar([1, 2, 3], 0).spans.is_empty());
+        assert_eq!(stacked_bar([0, 0], 5).spans[0].content, "─────");
+        assert!(stacked_bar([1, 2], 0).spans.is_empty());
     }
 
     #[test]

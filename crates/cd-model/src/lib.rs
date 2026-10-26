@@ -303,7 +303,7 @@ impl Inventory {
                     findings.push(asset.finding(
                         Severity::High,
                         &format!("{}.unprotected", A::SERVICE.as_str()),
-                        "no AWS Backup recovery point and no native backup",
+                        "no backup of any kind",
                     ));
                 }
             }
@@ -533,7 +533,8 @@ mod tests {
 
         let ebs = inventory.ebs.as_ref().unwrap();
         assert!(ebs.iter().all(|v| v.snapshots.is_some()));
-        assert_eq!(ebs[0].protection.status, ProtectionStatus::AwsBackup);
+        assert_eq!(ebs[0].protection.status, ProtectionStatus::Protected);
+        assert!(ebs[0].protection.aws_backup.is_some());
         assert_eq!(ebs[1].protection.status, ProtectionStatus::Unprotected);
         let codes: Vec<_> = inventory
             .findings

@@ -189,18 +189,14 @@ fn region_facets(regions: impl Iterator<Item = String>) -> Vec<Facet> {
 }
 
 pub fn assets(service: Service, rows: Vec<AssetRow>) -> TableData {
-    let mut facets: Vec<Facet> = [
-        ProtectionStatus::AwsBackup,
-        ProtectionStatus::NativeOnly,
-        ProtectionStatus::Unprotected,
-    ]
-    .into_iter()
-    .filter(|s| rows.iter().any(|r| r.status == *s))
-    .map(|s| Facet {
-        key: format!("status:{s:?}"),
-        label: s.label().to_string(),
-    })
-    .collect();
+    let mut facets: Vec<Facet> = [ProtectionStatus::Protected, ProtectionStatus::Unprotected]
+        .into_iter()
+        .filter(|s| rows.iter().any(|r| r.status == *s))
+        .map(|s| Facet {
+            key: format!("status:{s:?}"),
+            label: s.label().to_string(),
+        })
+        .collect();
     facets.extend(region_facets(rows.iter().map(|r| r.region.clone())));
 
     let records = rows
@@ -208,6 +204,7 @@ pub fn assets(service: Service, rows: Vec<AssetRow>) -> TableData {
         .map(|row| {
             let tags = format::tags(&row.tags);
             let last = format::when(row.last_backup.as_deref());
+            let by = row.backed_up_by.join(", ");
             Record {
                 cells: vec![
                     (row.name.clone(), None),
@@ -216,6 +213,14 @@ pub fn assets(service: Service, rows: Vec<AssetRow>) -> TableData {
                     (
                         row.status.label().to_string(),
                         Some(theme::status(row.status)),
+                    ),
+                    (
+                        if by.is_empty() {
+                            "-".into()
+                        } else {
+                            by.clone()
+                        },
+                        None,
                     ),
                     (last.clone(), None),
                     (row.summary.clone(), Some(theme::MUTE)),
@@ -226,6 +231,7 @@ pub fn assets(service: Service, rows: Vec<AssetRow>) -> TableData {
                     text(&row.region),
                     num(row.size_bytes.map(|b| b as f64)),
                     Key::Num(row.status as u8 as f64),
+                    text(&by),
                     opt(row.last_backup.as_deref()),
                     text(&row.summary),
                     text(&tags),
@@ -241,6 +247,7 @@ pub fn assets(service: Service, rows: Vec<AssetRow>) -> TableData {
                     row.region.clone(),
                     row.size_bytes.map(|b| b.to_string()).unwrap_or_default(),
                     row.status.label().to_string(),
+                    by,
                     row.last_backup.clone().unwrap_or_default(),
                     row.summary.clone(),
                     tags,
@@ -267,8 +274,12 @@ pub fn assets(service: Service, rows: Vec<AssetRow>) -> TableData {
                 width: Constraint::Length(10),
             },
             Column {
-                title: "Status",
+                title: "Protection",
                 width: Constraint::Length(11),
+            },
+            Column {
+                title: "Backed up by",
+                width: Constraint::Fill(3),
             },
             Column {
                 title: "Last backup",
@@ -288,7 +299,8 @@ pub fn assets(service: Service, rows: Vec<AssetRow>) -> TableData {
             "arn",
             "region",
             "size_bytes",
-            "status",
+            "protection",
+            "backed_up_by",
             "last_backup",
             "summary",
             "tags",
@@ -705,6 +717,7 @@ mod tests {
             region: region.into(),
             size_bytes: size,
             status,
+            backed_up_by: Vec::new(),
             last_backup: None,
             summary: String::new(),
             tags: [("team".to_string(), name.to_uppercase())].into(),
@@ -725,8 +738,8 @@ mod tests {
             Service::S3,
             vec![
                 row("logs", "us-east-1", ProtectionStatus::Unprotected, Some(5)),
-                row("app", "ap-southeast-2", ProtectionStatus::AwsBackup, None),
-                row("data", "us-east-1", ProtectionStatus::NativeOnly, Some(9)),
+                row("app", "ap-southeast-2", ProtectionStatus::Protected, None),
+                row("data", "us-east-1", ProtectionStatus::Protected, Some(9)),
             ],
         );
         let mut view = TableView::new(&data);
@@ -746,17 +759,16 @@ mod tests {
         assert_eq!(
             labels,
             [
-                "AWS Backup",
-                "Native only",
+                "Protected",
                 "Unprotected",
                 "region ap-southeast-2",
                 "region us-east-1"
             ]
         );
-        view.facet = Some(4);
+        view.facet = Some(3);
         view.refresh(&data);
         assert_eq!(names(&view, &data), ["data", "logs"]);
-        for _ in 0..data.facets.len() - 4 {
+        for _ in 0..data.facets.len() - 3 {
             view.cycle_facet(&data);
         }
         assert_eq!(view.facet, None);

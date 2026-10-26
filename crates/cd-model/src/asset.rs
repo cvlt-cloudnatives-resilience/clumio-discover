@@ -75,8 +75,8 @@ impl Service {
 )]
 #[serde(rename_all = "snake_case")]
 pub enum ProtectionStatus {
-    AwsBackup,
-    NativeOnly,
+    #[serde(alias = "aws_backup", alias = "native_only")]
+    Protected,
     #[default]
     Unprotected,
 }
@@ -84,8 +84,7 @@ pub enum ProtectionStatus {
 impl ProtectionStatus {
     pub fn label(self) -> &'static str {
         match self {
-            ProtectionStatus::AwsBackup => "AWS Backup",
-            ProtectionStatus::NativeOnly => "Native only",
+            ProtectionStatus::Protected => "Protected",
             ProtectionStatus::Unprotected => "Unprotected",
         }
     }
@@ -107,6 +106,20 @@ pub enum NativeKind {
 }
 
 impl NativeKind {
+    pub fn label(self) -> &'static str {
+        match self {
+            NativeKind::EbsSnapshot => "Snapshots",
+            NativeKind::Ami => "AMIs",
+            NativeKind::RdsAutomatedBackup => "Automated backups",
+            NativeKind::RdsSnapshot | NativeKind::RdsClusterSnapshot => "Snapshots",
+            NativeKind::DynamodbPitr => "PITR",
+            NativeKind::DynamodbBackup => "On-demand backups",
+            NativeKind::S3Versioning => "Versioning",
+            NativeKind::S3Replication => "Replication",
+            NativeKind::S3ObjectLock => "Object Lock",
+        }
+    }
+
     pub fn is_backup(self) -> bool {
         !matches!(
             self,
@@ -168,13 +181,24 @@ pub struct Protection {
 
 impl Protection {
     pub fn settle(&mut self) {
-        self.status = if self.aws_backup.is_some() {
-            ProtectionStatus::AwsBackup
-        } else if self.native.iter().any(|n| n.kind.is_backup()) {
-            ProtectionStatus::NativeOnly
-        } else {
+        self.status = if self.backed_up_by().is_empty() {
             ProtectionStatus::Unprotected
+        } else {
+            ProtectionStatus::Protected
         };
+    }
+
+    pub fn backed_up_by(&self) -> Vec<&'static str> {
+        let mut by = Vec::new();
+        if self.aws_backup.is_some() {
+            by.push("AWS Backup");
+        }
+        for kind in self.native.iter().map(|n| n.kind).filter(|k| k.is_backup()) {
+            if !by.contains(&kind.label()) {
+                by.push(kind.label());
+            }
+        }
+        by
     }
 
     pub fn last_backup(&self) -> Option<&str> {
@@ -265,6 +289,7 @@ pub struct AssetRow {
     pub region: String,
     pub size_bytes: Option<u64>,
     pub status: ProtectionStatus,
+    pub backed_up_by: Vec<String>,
     pub last_backup: Option<String>,
     pub summary: String,
     pub tags: Tags,
@@ -281,6 +306,11 @@ impl AssetRow {
             region: asset.region().to_string(),
             size_bytes: asset.size_bytes(),
             status: protection.status,
+            backed_up_by: protection
+                .backed_up_by()
+                .into_iter()
+                .map(str::to_string)
+                .collect(),
             last_backup: protection.last_backup().map(str::to_string),
             summary: asset.summary(),
             tags: asset.tags().clone(),
@@ -303,7 +333,7 @@ mod tests {
     }
 
     #[test]
-    fn status_prefers_aws_backup_then_native_backups() {
+    fn any_backup_protects_and_names_its_source() {
         let mut p = Protection::default();
         p.settle();
         assert_eq!(p.status, ProtectionStatus::Unprotected);
@@ -312,19 +342,37 @@ mod tests {
             .push(native(NativeKind::S3Versioning, "2026-10-01T00:00:00Z"));
         p.settle();
         assert_eq!(p.status, ProtectionStatus::Unprotected);
+        assert!(p.backed_up_by().is_empty());
 
         p.native
             .push(native(NativeKind::EbsSnapshot, "2026-10-02T00:00:00Z"));
         p.settle();
-        assert_eq!(p.status, ProtectionStatus::NativeOnly);
+        assert_eq!(p.status, ProtectionStatus::Protected);
+        assert_eq!(p.backed_up_by(), vec!["Snapshots"]);
 
         p.aws_backup = Some(AwsBackupCoverage {
             last_backup: Some("2026-10-03T00:00:00Z".into()),
             ..AwsBackupCoverage::default()
         });
         p.settle();
-        assert_eq!(p.status, ProtectionStatus::AwsBackup);
+        assert_eq!(p.status, ProtectionStatus::Protected);
+        assert_eq!(p.backed_up_by(), vec!["AWS Backup", "Snapshots"]);
         assert_eq!(p.last_backup(), Some("2026-10-03T00:00:00Z"));
+    }
+
+    #[test]
+    fn reads_statuses_from_older_inventory_files() {
+        for (json, status) in [
+            ("\"aws_backup\"", ProtectionStatus::Protected),
+            ("\"native_only\"", ProtectionStatus::Protected),
+            ("\"protected\"", ProtectionStatus::Protected),
+            ("\"unprotected\"", ProtectionStatus::Unprotected),
+        ] {
+            assert_eq!(
+                serde_json::from_str::<ProtectionStatus>(json).unwrap(),
+                status
+            );
+        }
     }
 
     #[test]
