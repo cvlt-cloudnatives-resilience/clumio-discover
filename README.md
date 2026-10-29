@@ -55,7 +55,7 @@ or with curl:
 
 ```
 TARGET=aarch64-apple-darwin
-VERSION=v0.3.0
+VERSION=v0.3.1
 BASE=https://github.com/cvlt-cloudnatives-resilience/clumio-discover-releases/releases/download/$VERSION
 curl -fLO "$BASE/clumio-discover-$VERSION-$TARGET.tar.gz"
 curl -fLO "$BASE/SHA256SUMS"
@@ -95,7 +95,7 @@ gh release download --repo cvlt-cloudnatives-resilience/clumio-discover-releases
 or with `Invoke-WebRequest`:
 
 ```
-$Version = "v0.3.0"
+$Version = "v0.3.1"
 $Name = "clumio-discover-$Version-x86_64-pc-windows-msvc"
 Invoke-WebRequest "https://github.com/cvlt-cloudnatives-resilience/clumio-discover-releases/releases/download/$Version/$Name.zip" -OutFile "$Name.zip"
 ```
@@ -123,7 +123,7 @@ set up.
 
    ```
    TARGET=$(uname -m)-unknown-linux-musl
-   VERSION=v0.3.0
+   VERSION=v0.3.1
    curl -fLO "https://github.com/cvlt-cloudnatives-resilience/clumio-discover-releases/releases/download/$VERSION/clumio-discover-$VERSION-$TARGET.tar.gz"
    ```
 
@@ -173,12 +173,34 @@ clumio-discover --profile my-profile
 
 Each resource is either **AWS Backup** (protected by AWS Backup) or **Not
 protected**, and **Last backup** shows its newest AWS Backup recovery point.
-See [How protection is decided](#how-protection-is-decided).
+See [How protection is decided](#how-protection-is-decided) and
+[How sizes are measured](#how-sizes-are-measured).
 
 ![Clumio Discover resource list](docs/resources.png)
 
-**Findings** lists risks worth fixing, most serious first, such as resources
-with no backup of any kind, unencrypted volumes, or publicly shared snapshots.
+Under the table of services, the Overview also counts what protects the
+account as a whole. Each has its own tab:
+
+- **Backup vaults:** AWS Backup vaults and whether Vault Lock is on, at the
+  bottom of the **AWS Backup** tab. That tab also lists every resource AWS
+  Backup holds recovery points for.
+- **Recycle Bin rules:** rules that keep deleted EBS snapshots and AMIs
+  recoverable for a set number of days.
+- **Trails:** CloudTrail trails, which record API calls, including every call
+  this tool makes.
+- **Errors:** AWS calls that failed. See
+  [Missing permissions](#missing-permissions).
+
+## Findings
+
+**Findings** lists risks worth fixing, most serious first:
+
+| Severity | Meaning | Examples |
+|---|---|---|
+| High | Data exposed to anyone, or nothing to restore from | No backup of any kind, public snapshot or AMI, S3 public access block off, database unencrypted or publicly accessible |
+| Medium | A weakness that makes loss or exposure more likely | Backed up only outside AWS Backup, unencrypted EBS volume, S3 versioning off, RDS backups kept under 7 days, DynamoDB point-in-time recovery off |
+| Low | A missing safety net against accidents | Deletion or termination protection off, backup vault without Vault Lock, region with no CloudTrail trail |
+| Info | Worth knowing, not a risk on its own | Snapshots shared with other accounts, no Recycle Bin rule, instance that may run SQL Server |
 
 ## How protection is decided
 
@@ -193,6 +215,23 @@ same account as the resource. They're still listed in each resource's details
 
 S3 versioning, replication and object lock don't count either. A delete or
 corruption is versioned or replicated along with everything else.
+
+## How sizes are measured
+
+Sizes come from metadata AWS already keeps. The tool never lists or reads
+objects, files or data, so bucket and volume size make no difference to how
+long a scan takes.
+
+| Service | Size shown |
+|---|---|
+| S3 | CloudWatch daily storage metrics (`BucketSizeBytes`), added up across storage classes. Available for every bucket with no S3 Storage Lens setup. Includes noncurrent versions and incomplete multipart uploads, so a versioned bucket shows what you're billed for, not just its current objects. Updated once a day; a bucket created in the last day or two shows `-`. |
+| EBS | **Provisioned** is the volume size you pay for. **Written** is the full size of the volume's latest snapshot: every block written to the volume, which tracks the space in use but can be higher after files are deleted. `-` usually means the volume has no snapshot. |
+| RDS | Allocated storage. |
+| Aurora, DocumentDB, Neptune | Cluster volume in use, from CloudWatch `VolumeBytesUsed`. |
+| DynamoDB | Table size reported by DynamoDB, updated about every six hours. |
+| EC2, S3 Tables, Glue Iceberg | Not shown. An instance's volumes are counted under EBS. |
+
+The Overview adds up the same figures, so its EBS total is provisioned size.
 
 ## Deep scan
 

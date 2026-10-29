@@ -297,12 +297,19 @@ impl Inventory {
                 }
                 asset.protection_mut().settle();
                 findings.extend(asset.findings());
-                if !asset.protection().has_backup() && asset.protection_scanned() {
+                if asset.protection().status != ProtectionStatus::Unprotected {
+                    continue;
+                }
+                let code = format!("{}.unprotected", A::SERVICE.as_str());
+                let native = asset.protection().native_backups();
+                if !native.is_empty() {
                     findings.push(asset.finding(
-                        Severity::High,
-                        &format!("{}.unprotected", A::SERVICE.as_str()),
-                        "no backup of any kind",
+                        Severity::Medium,
+                        &code,
+                        format!("not in AWS Backup, only {}", and_list(&native)),
                     ));
+                } else if asset.protection_scanned() {
+                    findings.push(asset.finding(Severity::High, &code, "no backup of any kind"));
                 }
             }
         }
@@ -410,6 +417,14 @@ impl Inventory {
     }
 }
 
+fn and_list(items: &[&str]) -> String {
+    match items {
+        [] => String::new(),
+        [one] => one.to_string(),
+        [rest @ .., last] => format!("{} and {last}", rest.join(", ")),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -512,7 +527,22 @@ mod tests {
     #[test]
     fn finalize_joins_aws_backup_by_arn_and_flags_unprotected() {
         let mut inventory = Inventory {
-            ebs: Some(vec![volume("vol-a"), volume("vol-b")]),
+            ebs: Some(vec![
+                volume("vol-a"),
+                volume("vol-b"),
+                EbsVolume {
+                    protection: Protection {
+                        native: vec![NativeBackup {
+                            kind: NativeKind::EbsSnapshot,
+                            count: Some(2),
+                            latest: None,
+                            detail: None,
+                        }],
+                        ..Protection::default()
+                    },
+                    ..volume("vol-c")
+                },
+            ]),
             aws_backup: Some(vec![ProtectedResource {
                 arn: "arn:aws:ec2:ap-southeast-2:1:volume/vol-a".into(),
                 region: "ap-southeast-2".into(),
@@ -533,13 +563,33 @@ mod tests {
         assert!(ebs.iter().all(|v| v.snapshots.is_some()));
         assert_eq!(ebs[0].protection.status, ProtectionStatus::AwsBackup);
         assert_eq!(ebs[1].protection.status, ProtectionStatus::Unprotected);
-        let codes: Vec<_> = inventory
+        assert_eq!(ebs[2].protection.status, ProtectionStatus::Unprotected);
+        let unprotected: Vec<_> = inventory
             .findings
             .iter()
-            .map(|f| (f.code.as_str(), f.name.as_str()))
+            .filter(|f| f.code == "ebs.unprotected")
+            .map(|f| (f.name.as_str(), f.severity, f.message.as_str()))
             .collect();
-        assert!(codes.contains(&("ebs.unprotected", "vol-b")));
-        assert!(!codes.contains(&("ebs.unprotected", "vol-a")));
+        assert_eq!(
+            unprotected,
+            vec![
+                ("vol-b", Severity::High, "no backup of any kind"),
+                (
+                    "vol-c",
+                    Severity::Medium,
+                    "not in AWS Backup, only EBS snapshots"
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn and_list_reads_as_a_sentence() {
+        assert_eq!(and_list(&["AMIs"]), "AMIs");
+        assert_eq!(
+            and_list(&["AMIs", "EBS snapshots", "on-demand backups"]),
+            "AMIs, EBS snapshots and on-demand backups"
+        );
     }
 
     #[test]

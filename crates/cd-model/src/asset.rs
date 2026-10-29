@@ -112,6 +112,20 @@ impl NativeKind {
             NativeKind::S3Versioning | NativeKind::S3Replication | NativeKind::S3ObjectLock
         )
     }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            NativeKind::EbsSnapshot => "EBS snapshots",
+            NativeKind::Ami => "AMIs",
+            NativeKind::RdsAutomatedBackup => "automated backups",
+            NativeKind::RdsSnapshot | NativeKind::RdsClusterSnapshot => "manual snapshots",
+            NativeKind::DynamodbPitr => "point-in-time recovery",
+            NativeKind::DynamodbBackup => "on-demand backups",
+            NativeKind::S3Versioning => "versioning",
+            NativeKind::S3Replication => "replication",
+            NativeKind::S3ObjectLock => "object lock",
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -174,8 +188,14 @@ impl Protection {
         };
     }
 
-    pub fn has_backup(&self) -> bool {
-        self.aws_backup.is_some() || self.native.iter().any(|n| n.kind.is_backup())
+    pub fn native_backups(&self) -> Vec<&'static str> {
+        let mut kinds = Vec::new();
+        for kind in self.native.iter().map(|n| n.kind).filter(|k| k.is_backup()) {
+            if !kinds.contains(&kind.label()) {
+                kinds.push(kind.label());
+            }
+        }
+        kinds
     }
 
     pub fn last_backup(&self) -> Option<&str> {
@@ -219,6 +239,10 @@ pub trait Asset: Serialize {
         None
     }
 
+    fn written_bytes(&self) -> Option<u64> {
+        None
+    }
+
     fn summary(&self) -> String {
         String::new()
     }
@@ -258,6 +282,8 @@ pub struct AssetRow {
     pub arn: String,
     pub region: String,
     pub size_bytes: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub written_bytes: Option<u64>,
     pub status: ProtectionStatus,
     pub last_backup: Option<String>,
     pub summary: String,
@@ -274,6 +300,7 @@ impl AssetRow {
             arn: asset.arn().to_string(),
             region: asset.region().to_string(),
             size_bytes: asset.size_bytes(),
+            written_bytes: asset.written_bytes(),
             status: protection.status,
             last_backup: protection.last_backup().map(str::to_string),
             summary: asset.summary(),
@@ -301,19 +328,27 @@ mod tests {
         let mut p = Protection::default();
         p.settle();
         assert_eq!(p.status, ProtectionStatus::Unprotected);
-        assert!(!p.has_backup());
+        assert!(p.native_backups().is_empty());
 
         p.native
             .push(native(NativeKind::S3Versioning, "2026-10-01T00:00:00Z"));
         p.settle();
         assert_eq!(p.status, ProtectionStatus::Unprotected);
-        assert!(!p.has_backup());
+        assert!(p.native_backups().is_empty());
 
-        p.native
-            .push(native(NativeKind::EbsSnapshot, "2026-10-02T00:00:00Z"));
+        for kind in [
+            NativeKind::RdsSnapshot,
+            NativeKind::RdsClusterSnapshot,
+            NativeKind::RdsAutomatedBackup,
+        ] {
+            p.native.push(native(kind, "2026-10-02T00:00:00Z"));
+        }
         p.settle();
         assert_eq!(p.status, ProtectionStatus::Unprotected);
-        assert!(p.has_backup());
+        assert_eq!(
+            p.native_backups(),
+            vec!["manual snapshots", "automated backups"]
+        );
         assert_eq!(p.last_backup(), None);
 
         p.aws_backup = Some(AwsBackupCoverage {

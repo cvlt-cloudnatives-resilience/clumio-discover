@@ -56,12 +56,12 @@ const STORAGE_TYPES: &[&str] = &[
     "GlacierInstantRetrievalStorage",
     "GlacierStorage",
     "DeepArchiveStorage",
-];
-
-const DEEP_STORAGE_TYPES: &[&str] = &[
     "IntelligentTieringAAStorage",
     "IntelligentTieringDAAStorage",
     "ReducedRedundancyStorage",
+];
+
+const DEEP_STORAGE_TYPES: &[&str] = &[
     "StandardIASizeOverhead",
     "StandardIAObjectOverhead",
     "OneZoneIASizeOverhead",
@@ -608,7 +608,13 @@ async fn bucket_size(
         }
     }
     if complete && !size.classes.is_empty() {
-        size.total = Some(size.classes.values().sum());
+        size.total = Some(
+            size.classes
+                .iter()
+                .filter(|(class, _)| !class.ends_with("Overhead"))
+                .map(|(_, bytes)| bytes)
+                .sum(),
+        );
     }
     match objects {
         Ok(output) => size.objects = latest_average(output.datapoints()),

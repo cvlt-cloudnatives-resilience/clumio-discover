@@ -103,6 +103,9 @@ impl Asset for EbsVolume {
     fn size_bytes(&self) -> Option<u64> {
         self.size_gib.map(|gib| gib as u64 * 1024 * 1024 * 1024)
     }
+    fn written_bytes(&self) -> Option<u64> {
+        self.snapshots.as_ref().and_then(|s| s.latest_full_bytes)
+    }
 
     fn summary(&self) -> String {
         let shape = [

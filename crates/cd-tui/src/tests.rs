@@ -156,7 +156,12 @@ fn asset_tabs_list_fixture_names_with_coloured_status() {
 
     press(&mut app, KeyCode::Char('3'));
     let s = screen(&mut app);
-    assert!(line_with(&s, "app-root").contains("100.0 GiB"));
+    assert!(s.contains("Provisioned"));
+    assert!(s.contains("Written"));
+    assert!(
+        line_with(&s, "app-root").contains("100.0 GiB   30.0 GiB"),
+        "{s}"
+    );
     assert!(line_with(&s, "app-root").contains("2026-10-23 01:00"));
     assert!(s.contains("vol-0a1b2c3d4e5f60002"));
 

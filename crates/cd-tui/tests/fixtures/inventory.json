@@ -52,6 +52,7 @@
       "encrypted": true,
       "attached_to": ["i-0aaa1111bbbb22223"],
       "tags": { "Name": "app-root", "Owner": "platform" },
+      "snapshots": { "count": 3, "latest": "2026-10-20T00:00:00Z", "latest_full_bytes": 32212254720 },
       "protection": {
         "status": "aws_backup",
         "aws_backup": {

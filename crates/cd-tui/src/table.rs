@@ -189,6 +189,7 @@ fn region_facets(regions: impl Iterator<Item = String>) -> Vec<Facet> {
 }
 
 pub fn assets(service: Service, rows: Vec<AssetRow>) -> TableData {
+    let written = service == Service::Ebs;
     let mut facets: Vec<Facet> = [ProtectionStatus::AwsBackup, ProtectionStatus::Unprotected]
         .into_iter()
         .filter(|s| rows.iter().any(|r| r.status == *s))
@@ -204,7 +205,7 @@ pub fn assets(service: Service, rows: Vec<AssetRow>) -> TableData {
         .map(|row| {
             let tags = format::tags(&row.tags);
             let last = format::when(row.last_backup.as_deref());
-            Record {
+            let mut record = Record {
                 cells: vec![
                     (row.name.clone(), None),
                     (row.region.clone(), Some(theme::MUTE)),
@@ -242,11 +243,24 @@ pub fn assets(service: Service, rows: Vec<AssetRow>) -> TableData {
                     tags,
                 ],
                 json: serde_json::to_value(&row).unwrap_or(Value::Null),
+            };
+            if written {
+                record
+                    .cells
+                    .insert(3, (format::opt_bytes(row.written_bytes), None));
+                record
+                    .sort
+                    .insert(3, num(row.written_bytes.map(|b| b as f64)));
+                record.csv.insert(
+                    4,
+                    row.written_bytes.map(|b| b.to_string()).unwrap_or_default(),
+                );
             }
+            record
         })
         .collect();
 
-    TableData {
+    let mut table = TableData {
         stem: service.as_str().to_string(),
         title: service.label().to_string(),
         columns: vec![
@@ -293,7 +307,23 @@ pub fn assets(service: Service, rows: Vec<AssetRow>) -> TableData {
         facets,
         detail_field: Some("detail"),
         default_sort: 0,
+    };
+    if written {
+        table.columns[2] = Column {
+            title: "Provisioned",
+            width: Constraint::Length(11),
+        };
+        table.columns.insert(
+            3,
+            Column {
+                title: "Written",
+                width: Constraint::Length(10),
+            },
+        );
+        table.csv_header[3] = "provisioned_bytes";
+        table.csv_header.insert(4, "written_bytes");
     }
+    table
 }
 
 pub fn aws_backup(resources: &[ProtectedResource]) -> TableData {
@@ -700,6 +730,7 @@ mod tests {
             arn: format!("arn:aws:s3:::{name}"),
             region: region.into(),
             size_bytes: size,
+            written_bytes: None,
             status,
             last_backup: None,
             summary: String::new(),
