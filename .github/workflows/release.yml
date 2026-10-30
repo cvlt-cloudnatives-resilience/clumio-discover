@@ -103,6 +103,8 @@ jobs:
       RELEASES_TOKEN: ${{ secrets.RELEASES_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
         with:
           path: assets
@@ -111,12 +113,28 @@ jobs:
         run: cd assets && sha256sum * > SHA256SUMS
       - name: Release notes
         run: |
-          awk -v v="${GITHUB_REF_NAME#v}" '/^## /{p = ($2 == v); next} p' CHANGELOG.md > notes.md
-          if ! grep -q . notes.md; then
+          awk -v v="${GITHUB_REF_NAME#v}" '/^## /{p = ($2 == v); next} p' CHANGELOG.md |
+            awk 'NF {for (; n > 0; n--) print ""; print; next} {n++}' > changes.md
+          if ! grep -q . changes.md; then
             echo "CHANGELOG.md has no section for ${GITHUB_REF_NAME#v}" >&2
             exit 1
           fi
-          printf '\nDownload the package for your computer and check it against `SHA256SUMS`. Install steps are in the [README](https://github.com/%s#install).\n' "$RELEASES_REPO" >> notes.md
+          if previous=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null); then
+            full="https://github.com/${GITHUB_REPOSITORY}/compare/${previous}...${GITHUB_REF_NAME}"
+          else
+            full="https://github.com/${GITHUB_REPOSITORY}/commits/${GITHUB_REF_NAME}"
+          fi
+          notes() {
+            echo "## What's Changed"
+            cat changes.md
+            echo
+            echo "**Full Changelog**: $1"
+            echo
+            echo "Download the package for your computer and check it against \`SHA256SUMS\`. Install steps are in the [README](https://github.com/${RELEASES_REPO}#install)."
+          }
+          notes "$full" > notes.md
+          notes "https://github.com/${RELEASES_REPO}/blob/main/CHANGELOG.md" > public-notes.md
+          cat notes.md public-notes.md
       - uses: softprops/action-gh-release@v2
         with:
           files: assets/*
@@ -149,4 +167,4 @@ jobs:
           token: ${{ env.RELEASES_TOKEN }}
           target_commitish: main
           files: assets/*
-          body_path: notes.md
+          body_path: public-notes.md
