@@ -3,10 +3,6 @@
 See everything in your AWS account that Clumio can protect, and how well it's
 protected today.
 
-> Provided as-is by the Commvault Cloud Natives Resilience team. Not a supported
-> Commvault product. Clumio and Commvault are trademarks of Commvault Systems,
-> Inc.
-
 ![Clumio Discover overview](docs/overview.png)
 
 - **Read-only.** Only Describe, List and Get calls. Nothing in your account is
@@ -276,6 +272,11 @@ If your login can't read something, the scan still finishes. What it couldn't
 read is listed in the **Errors** section, so you can add the permission and
 scan again.
 
-## License
+## Not an official Clumio product
 
-[Apache License 2.0](LICENSE). Copyright 2026 Tirslo.
+This is an independent app for read-only discovery of the AWS resources Clumio
+can protect, provided as-is. It is not an official Clumio or Commvault product
+or statement. Clumio is a trademark of its owner. For questions about the
+Clumio service, contact Clumio support. For this app, open an issue.
+
+[Apache-2.0](LICENSE).
