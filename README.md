@@ -26,15 +26,16 @@ protected today.
 
 Pick the build for your computer:
 
-| Computer | `TARGET` |
+| Computer | `PLATFORM` |
 |---|---|
-| Mac with Apple silicon (M1 or later) | `aarch64-apple-darwin` |
-| Mac with Intel | `x86_64-apple-darwin` |
-| Linux x86_64, including AWS CloudShell | `x86_64-unknown-linux-musl` |
-| Linux arm64 (Graviton) | `aarch64-unknown-linux-musl` |
-| Windows | `x86_64-pc-windows-msvc` |
+| Mac with Apple silicon (M1 or later) | `macos-arm64` |
+| Mac with Intel | `macos-x86_64` |
+| Linux x86_64, including AWS CloudShell | `linux-x86_64` |
+| Linux arm64 (Graviton) | `linux-aarch64` |
+| Windows | `windows-x86_64` |
 
 The Linux builds run on any distribution, including Amazon Linux 2 and 2023.
+What changed in each version is in [CHANGELOG.md](CHANGELOG.md).
 
 ### macOS and Linux
 
@@ -42,18 +43,18 @@ Download with the [GitHub CLI](https://cli.github.com), signed in with
 `gh auth login`:
 
 ```
-TARGET=aarch64-apple-darwin
+PLATFORM=macos-arm64
 gh release download --repo cvlt-cloudnatives-resilience/clumio-discover-releases \
-  --pattern "*-$TARGET.tar.gz" --pattern SHA256SUMS
+  --pattern "*-$PLATFORM.tar.gz" --pattern SHA256SUMS
 ```
 
 or with curl:
 
 ```
-TARGET=aarch64-apple-darwin
-VERSION=v0.3.1
+PLATFORM=macos-arm64
+VERSION=v0.3.2
 BASE=https://github.com/cvlt-cloudnatives-resilience/clumio-discover-releases/releases/download/$VERSION
-curl -fLO "$BASE/clumio-discover-$VERSION-$TARGET.tar.gz"
+curl -fLO "$BASE/clumio-discover-$VERSION-$PLATFORM.tar.gz"
 curl -fLO "$BASE/SHA256SUMS"
 ```
 
@@ -61,8 +62,8 @@ Check the download, unpack it and run it:
 
 ```
 shasum -a 256 --ignore-missing -c SHA256SUMS     # on Linux: sha256sum --ignore-missing -c SHA256SUMS
-tar -xzf clumio-discover-*-$TARGET.tar.gz
-cd clumio-discover-*-$TARGET
+tar -xzf clumio-discover-*-$PLATFORM.tar.gz
+cd clumio-discover-*-$PLATFORM
 ./clumio-discover
 ```
 
@@ -85,22 +86,22 @@ xattr -d com.apple.quarantine clumio-discover
 In PowerShell, download with the GitHub CLI:
 
 ```
-gh release download --repo cvlt-cloudnatives-resilience/clumio-discover-releases --pattern "*-x86_64-pc-windows-msvc.zip"
+gh release download --repo cvlt-cloudnatives-resilience/clumio-discover-releases --pattern "*-windows-x86_64.zip"
 ```
 
 or with `Invoke-WebRequest`:
 
 ```
-$Version = "v0.3.1"
-$Name = "clumio-discover-$Version-x86_64-pc-windows-msvc"
+$Version = "v0.3.2"
+$Name = "clumio-discover-$Version-windows-x86_64"
 Invoke-WebRequest "https://github.com/cvlt-cloudnatives-resilience/clumio-discover-releases/releases/download/$Version/$Name.zip" -OutFile "$Name.zip"
 ```
 
 Then unpack and run it:
 
 ```
-Expand-Archive clumio-discover-*-x86_64-pc-windows-msvc.zip -DestinationPath .
-cd clumio-discover-*-x86_64-pc-windows-msvc
+Expand-Archive clumio-discover-*-windows-x86_64.zip -DestinationPath .
+cd clumio-discover-*-windows-x86_64
 .\clumio-discover.exe
 ```
 
@@ -118,18 +119,18 @@ set up.
 2. Get the Linux build into CloudShell, either with curl:
 
    ```
-   TARGET=$(uname -m)-unknown-linux-musl
-   VERSION=v0.3.1
-   curl -fLO "https://github.com/cvlt-cloudnatives-resilience/clumio-discover-releases/releases/download/$VERSION/clumio-discover-$VERSION-$TARGET.tar.gz"
+   PLATFORM=linux-$(uname -m)
+   VERSION=v0.3.2
+   curl -fLO "https://github.com/cvlt-cloudnatives-resilience/clumio-discover-releases/releases/download/$VERSION/clumio-discover-$VERSION-$PLATFORM.tar.gz"
    ```
 
-   or by downloading the `x86_64-unknown-linux-musl` build on your computer and
+   or by downloading the `linux-x86_64` build on your computer and
    choosing **Actions → Upload file** in CloudShell.
 3. Unpack and run it:
 
    ```
-   tar -xzf clumio-discover-*-linux-musl.tar.gz
-   cd clumio-discover-*-linux-musl
+   tar -xzf clumio-discover-*-linux-*.tar.gz
+   cd clumio-discover-*-linux-*/
    ./clumio-discover
    ```
 

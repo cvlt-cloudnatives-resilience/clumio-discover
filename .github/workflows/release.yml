@@ -27,14 +27,19 @@ jobs:
         include:
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-musl
+            platform: linux-x86_64
           - os: ubuntu-22.04
             target: aarch64-unknown-linux-musl
+            platform: linux-aarch64
           - os: macos-latest
             target: aarch64-apple-darwin
+            platform: macos-arm64
           - os: macos-latest
             target: x86_64-apple-darwin
+            platform: macos-x86_64
           - os: windows-latest
             target: x86_64-pc-windows-msvc
+            platform: windows-x86_64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -70,18 +75,18 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          name="clumio-discover-${GITHUB_REF_NAME}-${{ matrix.target }}"
+          name="clumio-discover-${GITHUB_REF_NAME}-${{ matrix.platform }}"
           mkdir "$name"
-          cp "target/${{ matrix.target }}/release/clumio-discover" README.md LICENSE config.example.toml policy/clumio-discover-readonly.json "$name/"
+          cp "target/${{ matrix.target }}/release/clumio-discover" README.md CHANGELOG.md LICENSE config.example.toml policy/clumio-discover-readonly.json "$name/"
           tar -czf "$name.tar.gz" "$name"
           echo "ASSET=$name.tar.gz" >> "$GITHUB_ENV"
       - name: Package
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $name = "clumio-discover-$env:GITHUB_REF_NAME-${{ matrix.target }}"
+          $name = "clumio-discover-$env:GITHUB_REF_NAME-${{ matrix.platform }}"
           New-Item -ItemType Directory $name | Out-Null
-          Copy-Item "target/${{ matrix.target }}/release/clumio-discover.exe", README.md, LICENSE, config.example.toml, policy/clumio-discover-readonly.json $name
+          Copy-Item "target/${{ matrix.target }}/release/clumio-discover.exe", README.md, CHANGELOG.md, LICENSE, config.example.toml, policy/clumio-discover-readonly.json $name
           Compress-Archive $name "$name.zip"
           "ASSET=$name.zip" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
       - uses: actions/upload-artifact@v4
@@ -104,10 +109,18 @@ jobs:
           merge-multiple: true
       - name: Checksums
         run: cd assets && sha256sum * > SHA256SUMS
+      - name: Release notes
+        run: |
+          awk -v v="${GITHUB_REF_NAME#v}" '/^## /{p = ($2 == v); next} p' CHANGELOG.md > notes.md
+          if ! grep -q . notes.md; then
+            echo "CHANGELOG.md has no section for ${GITHUB_REF_NAME#v}" >&2
+            exit 1
+          fi
+          printf '\nDownload the package for your computer and check it against `SHA256SUMS`. Install steps are in the [README](https://github.com/%s#install).\n' "$RELEASES_REPO" >> notes.md
       - uses: softprops/action-gh-release@v2
         with:
           files: assets/*
-          generate_release_notes: true
+          body_path: notes.md
       - uses: actions/checkout@v4
         if: env.RELEASES_TOKEN != ''
         with:
@@ -118,7 +131,7 @@ jobs:
         if: env.RELEASES_TOKEN != ''
         run: |
           mkdir -p releases-repo/policy releases-repo/docs
-          cp README.md LICENSE config.example.toml releases-repo/
+          cp README.md CHANGELOG.md LICENSE config.example.toml releases-repo/
           cp policy/clumio-discover-readonly.json releases-repo/policy/
           cp docs/*.png releases-repo/docs/
           cd releases-repo
@@ -136,6 +149,4 @@ jobs:
           token: ${{ env.RELEASES_TOKEN }}
           target_commitish: main
           files: assets/*
-          body: |
-            Download the package for your computer and check it against `SHA256SUMS`.
-            Install steps are in the [README](https://github.com/${{ env.RELEASES_REPO }}#install).
+          body_path: notes.md
