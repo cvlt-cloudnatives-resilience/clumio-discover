@@ -52,7 +52,7 @@ or with curl:
 
 ```
 PLATFORM=macos-arm64
-VERSION=v0.3.2
+VERSION=v0.3.3
 BASE=https://github.com/cvlt-cloudnatives-resilience/clumio-discover-releases/releases/download/$VERSION
 curl -fLO "$BASE/clumio-discover-$VERSION-$PLATFORM.tar.gz"
 curl -fLO "$BASE/SHA256SUMS"
@@ -92,7 +92,7 @@ gh release download --repo cvlt-cloudnatives-resilience/clumio-discover-releases
 or with `Invoke-WebRequest`:
 
 ```
-$Version = "v0.3.2"
+$Version = "v0.3.3"
 $Name = "clumio-discover-$Version-windows-x86_64"
 Invoke-WebRequest "https://github.com/cvlt-cloudnatives-resilience/clumio-discover-releases/releases/download/$Version/$Name.zip" -OutFile "$Name.zip"
 ```
@@ -120,7 +120,7 @@ set up.
 
    ```
    PLATFORM=linux-$(uname -m)
-   VERSION=v0.3.2
+   VERSION=v0.3.3
    curl -fLO "https://github.com/cvlt-cloudnatives-resilience/clumio-discover-releases/releases/download/$VERSION/clumio-discover-$VERSION-$PLATFORM.tar.gz"
    ```
 
@@ -280,4 +280,5 @@ can protect, provided as-is. It is not an official Clumio or Commvault product
 or statement. Clumio is a trademark of its owner. For questions about the
 Clumio service, contact Clumio support. For this app, open an issue.
 
-[Apache-2.0](LICENSE).
+[Apache-2.0](LICENSE). Each download also includes `THIRD-PARTY-LICENSES.txt`,
+the licenses of the open-source software built into the program.

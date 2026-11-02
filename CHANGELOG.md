@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3 - 2026-11-02
+
+- Each download includes `THIRD-PARTY-LICENSES.txt`, the licenses of the open-source software built into the program.
+
 ## 0.3.2 - 2026-10-30
 
 - Downloads have plainer names: `linux-x86_64`, `linux-aarch64`, `macos-arm64`, `macos-x86_64` and `windows-x86_64`.

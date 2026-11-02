@@ -1,0 +1,31 @@
+Third-party licenses for clumio-discover
+
+clumio-discover is built with the open-source software listed below. Each
+license is shown once, after the Rust crates that use it. The Rust standard
+library and, in the Linux downloads, musl libc are covered at the end.
+
+{{#each overview~}}
+{{{name}}}: {{count}}
+{{/each}}
+
+{{#each licenses~}}
+================================================================================
+{{{name}}}
+
+Used by:
+{{#each used_by}}
+  {{{crate.name}}} {{{crate.version}}}
+{{/each}}
+
+{{{text}}}
+
+{{/each~}}
+================================================================================
+The Rust standard library
+
+Licensed under MIT OR Apache-2.0 by The Rust Project Developers. Both license
+texts are above.
+
+================================================================================
+musl libc (Linux downloads only)
+

@@ -2,3 +2,4 @@
 /dist
 inventory*.json
 !crates/cd-tui/tests/fixtures/inventory.json
+/THIRD-PARTY-LICENSES.txt
